@@ -1,0 +1,59 @@
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: Arial;
+}
+
+.login-container {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f3f4f6;
+}
+
+.login-box {
+  background: white;
+  padding: 30px;
+  border-radius: 10px;
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.login-box input {
+  padding: 10px;
+  font-size: 16px;
+}
+
+.login-box button {
+  padding: 10px;
+  cursor: pointer;
+}
+
+.error {
+  color: red;
+}
+
+.topbar {
+  height: 60px;
+  background: #111827;
+  color: white;
+
+  display: flex;
+
+  justify-content: space-between;
+  align-items: center;
+
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.topbar button {
+  padding: 8px 14px;
+  cursor: pointer;
+}

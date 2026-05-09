@@ -1,0 +1,43 @@
+# Node
+node_modules/
+npm-debug.log
+
+# Env
+.env
+.env.*
+
+# Logs
+logs/
+*.log
+
+# Docker
+volumes/
+data/
+
+# PostgreSQL
+postgres_data/
+
+# VictoriaMetrics
+vm_data/
+
+# Redpanda
+redpanda_data/
+
+# Build
+dist/
+build/
+
+# Vite
+.vite/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Temporary
+tmp/
+temp/
