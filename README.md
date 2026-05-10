@@ -1,66 +1,42 @@
-# IoT Fleet Platform
+# IoT Realtime Platform
 
-Plataforma SaaS IoT para tracking y telemetría vehicular.
+Plataforma SaaS IoT multi-tenant para tracking, telemetría y monitoreo en tiempo real.
 
----
-
-# Stack Tecnológico
-
-## Backend
-- Node.js
-- Express
-- KafkaJS
-- PostgreSQL/PostGIS
-- VictoriaMetrics
-
-## Frontend
-- React
-- Vite
-- Leaflet
-- TailwindCSS
-
-## Infraestructura
-- Docker
-- Mosquitto MQTT
-- Redpanda Kafka
+La plataforma permite ingestión de datos MQTT, streaming con Kafka, almacenamiento geoespacial con PostGIS y visualización realtime mediante WebSockets y React.
 
 ---
 
 # Features
 
-- GPS Tracking
-- Multi-tenant
+## Core Features
+
+- MQTT Telemetry Ingestion
+- Kafka Streaming Pipeline
+- Multi-tenant Architecture
 - JWT Authentication
-- Device Management
-- Real-time Telemetry
+- Real-time WebSockets
+- Live GPS Tracking
 - Historical Routes
+- Device Management
+- Geospatial Queries with PostGIS
 - Metrics & Monitoring
-- Kafka DLQ
-- PostGIS Geospatial Queries
+- Kafka Dead Letter Queue (DLQ)
 
 ---
 
 # Arquitectura
 
-MQTT → Kafka → Backend → PostgreSQL/PostGIS → Frontend
-
----
-
-# Levantar entorno
-
-```bash
-docker compose up -d
-```
-
----
-
-# Roadmap
-
-- Realtime WebSockets
-- Alerts Engine
-- Geofencing
-- OTA Firmware
-- Mobile App
-- Predictive Maintenance
-- Kubernetes
-- CI/CD
+```text
+Devices
+   ↓
+MQTT Broker (Mosquitto)
+   ↓
+Redpanda / Kafka
+   ↓
+Node.js Backend
+   ↓
+PostgreSQL + PostGIS
+   ↓
+Socket.IO Realtime
+   ↓
+React Frontend
