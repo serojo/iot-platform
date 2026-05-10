@@ -1,0 +1,15 @@
+input:
+  mqtt:
+    urls: ["tcp://mosquitto:1883"]
+    topics: ["clientes/#"]
+    client_id: "redpanda-connect"
+
+output:
+  kafka:
+    addresses: ["redpanda:9092"]
+    topic: "telemetria.bruta"
+
+pipeline:
+  processors:
+    - bloblang: |
+        root = this

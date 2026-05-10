@@ -1,43 +1,27 @@
 # Node
 node_modules/
-npm-debug.log
 
-# Env
+# Frontend build
+dist/
+
+# Environment
 .env
-.env.*
 
 # Logs
-logs/
 *.log
 
-# Docker
-volumes/
-data/
+# Mosquitto runtime
+mosquitto/data/
+mosquitto/log/
 
-# PostgreSQL
+# Docker persistent data
 postgres_data/
-
-# VictoriaMetrics
-vm_data/
-
-# Redpanda
 redpanda_data/
-
-# Build
-dist/
-build/
-
-# Vite
-.vite/
-
-# OS
-.DS_Store
-Thumbs.db
+vm_data/
 
 # IDE
 .vscode/
 .idea/
 
-# Temporary
-tmp/
-temp/
+# OS
+.DS_Store
