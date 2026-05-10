@@ -1,27 +1,24 @@
 # Node
 node_modules/
 
-# Frontend build
-dist/
-
-# Environment
-.env
-
 # Logs
 *.log
+
+# Docker
+*.pid
 
 # Mosquitto runtime
 mosquitto/data/
 mosquitto/log/
 
-# Docker persistent data
-postgres_data/
-redpanda_data/
-vm_data/
-
-# IDE
-.vscode/
-.idea/
+# Env
+.env
 
 # OS
 .DS_Store
+
+# Vite
+dist/
+
+# Backups
+*_backup*

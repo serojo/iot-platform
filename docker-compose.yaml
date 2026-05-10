@@ -86,7 +86,7 @@ services:
 
   # 🟡 Backend Node.js
   backend:
-    build: ./backend
+    build: ./services/backend
     container_name: backend
     depends_on:
       - redpanda
@@ -104,6 +104,29 @@ services:
     networks:
       - iot_net
     restart: unless-stopped
+
+  # 🌐 Frontend React
+  frontend:
+    build: ./services/frontend
+    container_name: frontend
+
+    ports:
+      - "5173:5173"
+
+    depends_on:
+      - backend
+
+    environment:
+      VITE_API_URL: http://192.168.10.15:3000
+
+    networks:
+      - iot_net
+
+    restart: unless-stopped
+
+
+
+
 
 # 🔗 Red interna
 networks:
