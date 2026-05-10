@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-
 import axios from "axios";
 
 import {
@@ -12,6 +11,7 @@ import {
 import L from "leaflet";
 
 import "leaflet/dist/leaflet.css";
+
 
 // Fix iconos Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -27,45 +27,66 @@ L.Icon.Default.mergeOptions({
     "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png"
 });
 
-export default function FleetMap({ token, onLogout }) {
+export default function FleetMap({
+  token,
+  socket,
+  onLogout
+}) {
 
-  const [devices, setDevices] = useState([]);
+  const [devices, setDevices] = useState({});
 
-  async function loadDevices() {
+async function loadDevices() {
 
-    try {
+  try {
 
-      const response = await axios.get(
-        "http://192.168.10.15:3000/devices/latest",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
+    const response = await axios.get(
+      "http://192.168.10.15:3000/devices/latest",
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
         }
-      );
+      }
+    );
 
-      setDevices(response.data);
+    const devicesMap = {};
 
-    } catch (err) {
+    response.data.forEach((d) => {
 
-      console.error(err);
+      devicesMap[d.device_id] = d;
 
-    }
+    });
+
+    setDevices(devicesMap);
+
+  } catch (err) {
+
+    console.error(err);
 
   }
 
-  useEffect(() => {
+}
+useEffect(() => {
 
-    loadDevices();
+  loadDevices();
 
-    const interval = setInterval(
-      loadDevices,
-      5000
-    );
+socket.on("device_update", (device) => {
 
-    return () => clearInterval(interval);
+  setDevices((prev) => ({
 
-  }, []);
+    ...prev,
+
+    [device.device_id]: device
+
+  }));
+
+});
+
+  return () => {
+    socket.off("device_update");
+  };
+
+}, []);
+
 
   return (
 
@@ -95,10 +116,10 @@ export default function FleetMap({ token, onLogout }) {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {devices.map((d, idx) => (
+        {Object.values(devices).map((d) => (
 
           <Marker
-            key={idx}
+            key={d.device_id}
             position={[d.lat, d.lon]}
           >
 

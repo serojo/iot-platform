@@ -4,6 +4,8 @@ const { Kafka } = require("kafkajs");
 const { Pool } = require("pg");
 const axios = require("axios");
 const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
@@ -18,6 +20,9 @@ app.use(cors({
 
 app.use(express.json());
 
+//
+// KAFKA
+//
 const kafka = new Kafka({
   brokers: [process.env.KAFKA_BROKER]
 });
@@ -28,6 +33,9 @@ const consumer = kafka.consumer({
 
 const producer = kafka.producer();
 
+//
+// POSTGRES
+//
 const pg = new Pool({
   host: process.env.PG_HOST,
   user: process.env.PG_USER,
@@ -35,8 +43,78 @@ const pg = new Pool({
   database: process.env.PG_DB,
 });
 
+//
+// JWT
+//
 const JWT_SECRET =
   process.env.JWT_SECRET || "super_secret_key_change_me";
+
+//
+// HTTP SERVER
+//
+const server = http.createServer(app);
+
+//
+// SOCKET.IO
+//
+const io = new Server(server, {
+  cors: {
+    origin: "*"
+  }
+});
+
+//
+// SOCKET AUTH
+//
+io.use((socket, next) => {
+
+  try {
+
+    const token =
+      socket.handshake.auth.token;
+
+    if (!token) {
+      return next(new Error("missing token"));
+    }
+
+    const decoded = jwt.verify(
+      token,
+      JWT_SECRET
+    );
+
+    socket.user = decoded;
+
+    next();
+
+  } catch (err) {
+
+    next(new Error("invalid token"));
+
+  }
+
+});
+
+//
+// SOCKET CONNECTION
+//
+io.on("connection", (socket) => {
+
+  console.log(
+    "Frontend connected:",
+    socket.user.username,
+    socket.user.tenant
+  );
+
+  socket.on("disconnect", () => {
+
+    console.log(
+      "Frontend disconnected:",
+      socket.user.username
+    );
+
+  });
+
+});
 
 //
 // JWT AUTH MIDDLEWARE
@@ -45,7 +123,8 @@ function authMiddleware(req, res, next) {
 
   try {
 
-    const authHeader = req.headers.authorization;
+    const authHeader =
+      req.headers.authorization;
 
     if (!authHeader) {
 
@@ -55,7 +134,8 @@ function authMiddleware(req, res, next) {
 
     }
 
-    const token = authHeader.split(" ")[1];
+    const token =
+      authHeader.split(" ")[1];
 
     const decoded = jwt.verify(
       token,
@@ -145,7 +225,7 @@ async function run() {
         const lon = d.gps.lon;
 
         //
-        // INSERT PostgreSQL
+        // INSERT POSTGRESQL
         //
         const start = Date.now();
 
@@ -193,7 +273,7 @@ async function run() {
         ]);
 
         //
-        // LATENCIAS
+        // LATENCY
         //
         const latency =
           Date.now() - start;
@@ -232,6 +312,40 @@ signal{device_id="${deviceId}"} ${d.network?.signal_dbm ?? 0}
 
         );
 
+        //
+        // REALTIME SOCKET.IO
+        //
+        io.sockets.sockets.forEach((socket) => {
+
+          if (
+            socket.user?.tenant === tenant
+          ) {
+
+            socket.emit("device_update", {
+
+              tenant,
+              device_id: deviceId,
+              lat,
+              lon,
+
+              temperatura:
+                d.sensors?.temperature,
+
+              humedad:
+                d.sensors?.humidity,
+
+              signal_dbm:
+                d.network?.signal_dbm,
+
+              timestamp:
+                d.timestamp
+
+            });
+
+          }
+
+        });
+
         console.log(
           "OK:",
           tenant,
@@ -249,7 +363,7 @@ signal{device_id="${deviceId}"} ${d.network?.signal_dbm ?? 0}
         );
 
         //
-        // DLQ Kafka
+        // DLQ KAFKA
         //
         try {
 
@@ -261,11 +375,15 @@ signal{device_id="${deviceId}"} ${d.network?.signal_dbm ?? 0}
 
               {
                 value: JSON.stringify({
+
                   error: err.message,
+
                   raw_payload:
                     message.value.toString(),
+
                   timestamp:
                     new Date().toISOString()
+
                 })
               }
 
@@ -394,7 +512,7 @@ app.get(
       const tenant =
         req.user.tenant;
 
-      let query = `
+      const query = `
 
         SELECT DISTINCT ON (c.device_id)
 
@@ -502,14 +620,10 @@ app.get(
 );
 
 //
-// START API
+// START SERVER
 //
-app.listen(3000, () => {
-
-  console.log(
-    "API listening on port 3000"
-  );
-
+server.listen(3000, () => {
+  console.log("API listening on port 3000");
 });
 
 //

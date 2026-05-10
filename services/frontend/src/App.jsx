@@ -1,3 +1,4 @@
+import { io } from "socket.io-client";
 import { useState } from "react";
 
 import Login from "./components/Login";
@@ -9,6 +10,18 @@ export default function App() {
 
   const [token, setToken] = useState(
     localStorage.getItem("token")
+  );
+
+  //
+  // SOCKET.IO
+  //
+  const socket = io(
+    "http://192.168.10.15:3000",
+    {
+      auth: {
+        token
+      }
+    }
   );
 
   function handleLogout() {
@@ -30,6 +43,7 @@ export default function App() {
   return (
     <FleetMap
       token={token}
+      socket={socket}
       onLogout={handleLogout}
     />
   );
