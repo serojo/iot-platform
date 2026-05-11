@@ -44,21 +44,24 @@ export default function FleetMap({
   const [devices, setDevices] = useState({});
 
   const [selectedDevice, setSelectedDevice] = useState(null);
-
+console.log(devices);
 const totalVehicles =
   Object.keys(devices).length;
 
+
+
+
 const onlineVehicles =
-  Object.values(devices).filter((d) => {
+  Object.values(devices).filter(
+    (d) => d.online === true
+  ).length;
 
-    if (!d.timestamp) return false;
 
-    const diff =
-      (Date.now() - new Date(d.timestamp)) / 1000;
 
-    return diff < 120;
 
-  }).length;
+
+
+
 
   useEffect(() => {
 
@@ -82,7 +85,12 @@ const onlineVehicles =
       const map = {};
 
       response.data.forEach((d) => {
-        map[d.device_id] = d;
+
+map[d.device_id] = {
+  ...d,
+  online: true
+};
+
       });
 
       setDevices(map);
@@ -103,10 +111,15 @@ const onlineVehicles =
 
       setDevices((prev) => ({
         ...prev,
-        [data.device_id]: {
-          ...prev[data.device_id],
-          ...data
-        }
+
+[data.device_id]: {
+  ...prev[data.device_id],
+  ...data,
+  online: true
+}
+
+
+
       }));
 
     });
