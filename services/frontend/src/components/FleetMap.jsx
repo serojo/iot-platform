@@ -1,6 +1,3 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
-
 import {
   MapContainer,
   TileLayer,
@@ -8,156 +5,311 @@ import {
   Popup
 } from "react-leaflet";
 
-import L from "leaflet";
-
 import "leaflet/dist/leaflet.css";
 
+import { useEffect, useState } from "react";
 
-// Fix iconos Leaflet
-delete L.Icon.Default.prototype._getIconUrl;
+import axios from "axios";
 
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+import L from "leaflet";
 
+import {
+  FaTruck,
+  FaSignal,
+  FaThermometerHalf,
+  FaSignOutAlt
+} from "react-icons/fa";
+
+const API_URL = import.meta.env.VITE_API_URL;
+
+const truckIcon = new L.Icon({
   iconUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+    "https://cdn-icons-png.flaticon.com/512/744/744465.png",
 
-  shadowUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png"
+  iconSize: [32, 32],
+
+  iconAnchor: [16, 32]
 });
 
 export default function FleetMap({
   token,
-  socket,
-  onLogout
+  onLogout,
+  socket
 }) {
 
   const [devices, setDevices] = useState({});
 
+  const [selectedDevice, setSelectedDevice] = useState(null);
+
+  useEffect(() => {
+
+    loadDevices();
+
+  }, []);  
+
 async function loadDevices() {
 
-  try {
+    try {
 
-    const response = await axios.get(
-      "http://192.168.10.15:3000/devices/latest",
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
+      const response = await axios.get(
+        `${API_URL}/devices/latest`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
         }
-      }
-    );
+      );
 
-    const devicesMap = {};
+      const map = {};
 
-    response.data.forEach((d) => {
+      response.data.forEach((d) => {
+        map[d.device_id] = d;
+      });
 
-      devicesMap[d.device_id] = d;
+      setDevices(map);
 
-    });
+    } catch (err) {
 
-    setDevices(devicesMap);
+      console.error(err);
 
-  } catch (err) {
-
-    console.error(err);
+    }
 
   }
 
-}
-useEffect(() => {
+  useEffect(() => {
 
-  loadDevices();
+    if (!socket) return;
 
-socket.on("device_update", (device) => {
+    socket.on("device_update", (data) => {
 
-  setDevices((prev) => ({
+      setDevices((prev) => ({
+        ...prev,
+        [data.device_id]: {
+          ...prev[data.device_id],
+          ...data
+        }
+      }));
 
-    ...prev,
+    });
 
-    [device.device_id]: device
+    return () => {
+      socket.off("device_update");
+    };
 
-  }));
+  }, [socket]);
 
-});
+  function getLastSeen(ts) {
 
-  return () => {
-    socket.off("device_update");
-  };
+    if (!ts) return "unknown";
 
-}, []);
+    const diff = Math.floor(
+      (Date.now() - new Date(ts)) / 1000
+    );
 
+    if (diff < 60) {
+      return `${diff}s ago`;
+    }
+
+    if (diff < 3600) {
+      return `${Math.floor(diff / 60)}m ago`;
+    }
+
+    return `${Math.floor(diff / 3600)}h ago`;
+
+  }
 
   return (
 
-    <div>
+    <div
+      style={{
+        display: "flex",
+        height: "100vh",
+        background: "#111827",
+        color: "white"
+      }}
+    >
 
-      <div className="topbar">
-
-        <h2>Fleet Dashboard</h2>
-
-        <button onClick={onLogout}>
-          Logout
-        </button>
-
-      </div>
-
-      <MapContainer
-        center={[-34.6, -58.38]}
-        zoom={7}
+      {/* SIDEBAR */}
+      <div
         style={{
-          height: "90vh",
-          width: "100%"
+          width: "340px",
+          background: "#1f2937",
+          padding: "20px",
+          overflowY: "auto",
+          borderRight: "1px solid #374151"
         }}
       >
 
-        <TileLayer
-          attribution='&copy; OpenStreetMap'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "20px"
+          }}
+        >
 
-        {Object.values(devices).map((d) => (
+          <h2>
+            Fleet Control
+          </h2>
 
-          <Marker
-            key={d.device_id}
-            position={[d.lat, d.lon]}
+          <button
+            onClick={onLogout}
+            style={{
+              background: "#dc2626",
+              border: "none",
+              color: "white",
+              padding: "8px 12px",
+              borderRadius: "8px",
+              cursor: "pointer"
+            }}
           >
+            <FaSignOutAlt />
+          </button>
 
-            <Popup>
+        </div>
 
-              <b>{d.alias || d.device_id}</b>
-	      <br />
-	      Chofer: {d.driver_name}
+        <div
+          style={{
+            marginBottom: "15px",
+            fontSize: "14px",
+            opacity: 0.7
+          }}
+        >
+          Active Vehicles: {Object.keys(devices).length}
+        </div>
 
-	      <br />
-	      Patente: {d.vehicle_plate}
+        {
+          Object.values(devices).map((d) => (
 
-	      <br />
-	      Grupo: {d.group_name}
+            <div
+              key={d.device_id}
+              onClick={() => setSelectedDevice(d.device_id)}
+              style={{
+                background:
+                  selectedDevice === d.device_id
+                    ? "#2563eb"
+                    : "#374151",
 
-              <br />
+                padding: "15px",
+                borderRadius: "12px",
+                marginBottom: "12px",
+                cursor: "pointer"
+              }}
+            >
 
-              Tenant: {d.tenant}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginBottom: "10px"
+                }}
+              >
 
-              <br />
+                <div>
+                  <FaTruck /> {d.device_id}
+                </div>
 
-              Temp: {d.temperatura}
+                <div
+                  style={{
+                    color: "#22c55e",
+                    fontSize: "12px"
+                  }}
+                >
+                  ONLINE
+                </div>
 
-              <br />
+              </div>
 
-              Hum: {d.humedad}
+              <div
+                style={{
+                  fontSize: "13px",
+                  opacity: 0.8
+                }}
+              >
 
-              <br />
+                <div>
+                  <FaThermometerHalf /> Temp: {d.temperatura}°C
+                </div>
 
-              Signal: {d.signal_dbm}
+                <div>
+                  <FaSignal /> Signal: {d.signal_dbm} dBm
+                </div>
 
-            </Popup>
+                <div>
+                  Last Seen: {getLastSeen(d.timestamp)}
+                </div>
 
-          </Marker>
+              </div>
 
-        ))}
+            </div>
+          ))
+        }
 
-      </MapContainer>
+      </div>
+
+      {/* MAP */}
+      <div style={{ flex: 1 }}>
+
+        <MapContainer
+          center={[-34.6, -58.38]}
+          zoom={7}
+          style={{
+            height: "100vh",
+            width: "100%"
+          }}
+        >
+
+          <TileLayer
+            attribution='&copy; OpenStreetMap'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+
+          {
+            Object.values(devices).map((d) => (
+
+              <Marker
+                key={d.device_id}
+                position={[d.lat, d.lon]}
+                icon={truckIcon}
+              >
+
+                <Popup>
+
+                  <div>
+
+                    <h3>{d.device_id}</h3>
+
+                    <hr />
+
+                    <p>
+                      🌡 Temp: {d.temperatura}°C
+                    </p>
+
+                    <p>
+                      📶 Signal: {d.signal_dbm} dBm
+                    </p>
+
+                    <p>
+                      💧 Humidity: {d.humedad}%
+                    </p>
+
+                    <p>
+                      🕒 {d.timestamp}
+                    </p>
+
+                  </div>
+
+                </Popup>
+
+              </Marker>
+
+            ))
+          }
+
+        </MapContainer>
+
+      </div>
 
     </div>
 
