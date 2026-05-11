@@ -6,7 +6,8 @@ import {
 } from "react-leaflet";
 
 import "leaflet/dist/leaflet.css";
-
+import "leaflet-defaulticon-compatibility";
+import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
 import { useEffect, useState } from "react";
 
 import axios from "axios";
@@ -17,7 +18,10 @@ import {
   FaTruck,
   FaSignal,
   FaThermometerHalf,
-  FaSignOutAlt
+  FaSignOutAlt,
+  FaSearch,
+  FaMapMarkedAlt,
+  FaWifi
 } from "react-icons/fa";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -41,13 +45,28 @@ export default function FleetMap({
 
   const [selectedDevice, setSelectedDevice] = useState(null);
 
+const totalVehicles =
+  Object.keys(devices).length;
+
+const onlineVehicles =
+  Object.values(devices).filter((d) => {
+
+    if (!d.timestamp) return false;
+
+    const diff =
+      (Date.now() - new Date(d.timestamp)) / 1000;
+
+    return diff < 120;
+
+  }).length;
+
   useEffect(() => {
 
     loadDevices();
 
-  }, []);  
+  }, []);
 
-async function loadDevices() {
+  async function loadDevices() {
 
     try {
 
@@ -177,6 +196,38 @@ async function loadDevices() {
           }}
         >
           Active Vehicles: {Object.keys(devices).length}
+<div
+  style={{
+    marginTop: "15px",
+    marginBottom: "20px",
+    position: "relative"
+  }}
+>
+
+  <FaSearch
+    style={{
+      position: "absolute",
+      top: "12px",
+      left: "12px",
+      color: "#9ca3af"
+    }}
+  />
+
+  <input
+    placeholder="Buscar vehículo..."
+    style={{
+      width: "100%",
+      padding: "10px 10px 10px 36px",
+      borderRadius: "10px",
+      border: "none",
+      background: "#111827",
+      color: "white"
+    }}
+  />
+
+</div>
+
+
         </div>
 
         {
@@ -220,8 +271,7 @@ async function loadDevices() {
                 </div>
 
               </div>
-
-              <div
+             <div
                 style={{
                   fontSize: "13px",
                   opacity: 0.8
@@ -248,16 +298,55 @@ async function loadDevices() {
 
       </div>
 
+
+
+
+<div className="topbar">
+
+  <div className="stat-card">
+
+    <div className="stat-icon">
+      <FaTruck />
+    </div>
+
+    <div>
+      <h4>Total Vehículos</h4>
+      <span>{totalVehicles}</span>
+    </div>
+
+  </div>
+
+  <div className="stat-card">
+
+    <div className="stat-icon online">
+      <FaWifi />
+    </div>
+
+    <div>
+      <h4>Online</h4>
+      <span>{onlineVehicles}</span>
+    </div>
+
+  </div>
+
+</div>
+
+
+
+
+
+
       {/* MAP */}
-      <div style={{ flex: 1 }}>
+<div
+  style={{
+    flex: 1,
+  }}
+>
 
         <MapContainer
           center={[-34.6, -58.38]}
-          zoom={7}
-          style={{
-            height: "100vh",
-            width: "100%"
-          }}
+          zoom={10}
+          style={{ height: "100vh", width: "calc(100%)" }}
         >
 
           <TileLayer
@@ -273,7 +362,6 @@ async function loadDevices() {
                 position={[d.lat, d.lon]}
                 icon={truckIcon}
               >
-
                 <Popup>
 
                   <div>
@@ -316,3 +404,4 @@ async function loadDevices() {
   );
 
 }
+
