@@ -22,3 +22,5 @@ dist/
 
 # Backups
 *_backup*
+
+coverage/
