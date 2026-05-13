@@ -1,0 +1,84 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+
+  "title": "UnifiedTelemetry",
+
+  "type": "object",
+
+  "required": [
+    "tenant",
+    "device_id",
+    "timestamp"
+  ],
+
+  "properties": {
+
+    "tenant": {
+      "type": "string"
+    },
+
+    "device_id": {
+      "type": "string"
+    },
+
+    "timestamp": {
+      "type": "string"
+    },
+
+    "gps": {
+
+      "type": "object",
+
+      "properties": {
+
+        "lat": {
+          "type": "number"
+        },
+
+        "lon": {
+          "type": "number"
+        },
+
+        "speed_kmh": {
+          "type": "number"
+        }
+
+      }
+
+    },
+
+    "network": {
+
+      "type": "object",
+
+      "properties": {
+
+        "signal_dbm": {
+          "type": "number"
+        }
+
+      }
+
+    },
+
+    "sensors": {
+
+      "type": "object",
+
+      "properties": {
+
+        "temperature": {
+          "type": "number"
+        },
+
+        "humidity": {
+          "type": "number"
+        }
+
+      }
+
+    }
+
+  }
+
+}

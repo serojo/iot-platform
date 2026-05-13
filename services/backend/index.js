@@ -166,7 +166,7 @@ async function run() {
   await producer.connect();
 
   await consumer.subscribe({
-    topic: "telemetria.bruta"
+    topic: "telemetry.normalized"
   });
 
   await consumer.run({
@@ -179,27 +179,14 @@ async function run() {
           message.value.toString()
         );
 
-        //
-        // TENANT desde MQTT topic
-        //
-        const mqttTopicHeader =
-          message.headers?.mqtt_topic;
 
-        let tenant = "default";
 
-        if (mqttTopicHeader) {
 
-          const topic =
-            mqttTopicHeader.toString();
 
-          // clientes/A/camiones/WLINK_R130_001
-          const parts = topic.split("/");
 
-          if (parts.length >= 2) {
-            tenant = parts[1];
-          }
+        const tenant = d.tenant;
 
-        }
+
 
         //
         // VALIDACIONES
@@ -212,12 +199,17 @@ async function run() {
           throw new Error("timestamp missing");
         }
 
-        if (
-          d.gps?.lat == null ||
-          d.gps?.lon == null
-        ) {
-          throw new Error("gps missing");
-        }
+
+	if (d.gps.lat < -90 || d.gps.lat > 90) {
+	  throw new Error(`Invalid latitude: ${d.gps.lat}`);
+	}
+
+	if (d.gps.lon < -180 || d.gps.lon > 180) {
+	  throw new Error(`Invalid longitude: ${d.gps.lon}`);
+	}
+
+
+
 
         const deviceId = d.device_id;
 

@@ -31,7 +31,7 @@ services:
       - --node-id 0
       - --check=false
       - --kafka-addr PLAINTEXT://0.0.0.0:9092
-      - --advertise-kafka-addr PLAINTEXT://redpanda:9092
+      - --advertise-kafka-addr PLAINTEXT://192.168.10.15:9092
     ports:
       - "9092:9092"
     volumes:
@@ -53,6 +53,34 @@ services:
     networks:
       - iot_net
     restart: unless-stopped
+
+
+  mqtt-adapter:
+    build: ./services/adapters/mqtt
+
+    container_name: mqtt-adapter
+
+    depends_on:
+      - redpanda
+
+    networks:
+      - iot_net
+
+    restart: unless-stopped
+
+  tasmota-adapter:
+    build:
+      context: ./services/adapters/tasmota-adapter
+    container_name: tasmota-adapter
+    env_file:
+      - ./services/adapters/tasmota-adapter/.env
+    depends_on:
+      - mosquitto
+      - redpanda
+
+
+
+
 
   # 🟢 PostgreSQL + PostGIS
   postgres:
@@ -79,6 +107,7 @@ services:
       - "8428:8428"
     command:
       - "--storageDataPath=/storage"
+      - "--retentionPeriod=7d"
     volumes:
       - vm_data:/storage
     networks:
