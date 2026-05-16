@@ -179,14 +179,7 @@ async function run() {
           message.value.toString()
         );
 
-
-
-
-
-
         const tenant = d.tenant;
-
-
 
         //
         // VALIDACIONES
@@ -199,22 +192,24 @@ async function run() {
           throw new Error("timestamp missing");
         }
 
+        //
+        // GPS OPTIONAL
+        //
+        const lat =
+          d.gps?.lat ?? -34.6037;
 
-	if (d.gps.lat < -90 || d.gps.lat > 90) {
-	  throw new Error(`Invalid latitude: ${d.gps.lat}`);
-	}
+        const lon =
+          d.gps?.lon ?? -58.3816;
 
-	if (d.gps.lon < -180 || d.gps.lon > 180) {
-	  throw new Error(`Invalid longitude: ${d.gps.lon}`);
-	}
+        if (lat < -90 || lat > 90) {
+          throw new Error(`Invalid latitude: ${lat}`);
+        }
 
-
-
+        if (lon < -180 || lon > 180) {
+          throw new Error(`Invalid longitude: ${lon}`);
+        }
 
         const deviceId = d.device_id;
-
-        const lat = d.gps.lat;
-        const lon = d.gps.lon;
 
         //
         // INSERT POSTGRESQL
@@ -313,10 +308,15 @@ signal{device_id="${deviceId}"} ${d.network?.signal_dbm ?? 0}
             socket.user?.tenant === tenant
           ) {
 
+            //
+            // DEVICE UPDATE
+            //
             socket.emit("device_update", {
 
               tenant,
+
               device_id: deviceId,
+
               lat,
               lon,
 
@@ -331,6 +331,134 @@ signal{device_id="${deviceId}"} ${d.network?.signal_dbm ?? 0}
 
               timestamp:
                 d.timestamp
+
+            });
+
+            //
+            // EVENTS
+            //
+            const events = [];
+
+            //
+            // POWER EVENT
+            //
+            if (d.state?.power) {
+
+              events.push({
+
+                type: "power",
+
+                message:
+                  `POWER ${d.state.power}`,
+
+                timestamp:
+                  d.timestamp
+
+              });
+
+            }
+
+            //
+            // SIGNAL EVENT
+            //
+            if (
+              d.network?.signal_dbm !== undefined
+            ) {
+
+              events.push({
+
+                type: "signal",
+
+                message:
+                  `RSSI ${d.network.signal_dbm} dBm`,
+
+                timestamp:
+                  d.timestamp
+
+              });
+
+            }
+
+            //
+            // TEMPERATURE EVENT
+            //
+            if (
+              d.sensors?.temperature !== undefined
+            ) {
+
+              events.push({
+
+                type: "temperature",
+
+                message:
+                  `Temperature ${d.sensors.temperature} °C`,
+
+                timestamp:
+                  d.timestamp
+
+              });
+
+            }
+
+            //
+            // HUMIDITY EVENT
+            //
+            if (
+              d.sensors?.humidity !== undefined
+            ) {
+
+              events.push({
+
+                type: "humidity",
+
+                message:
+                  `Humidity ${d.sensors.humidity}%`,
+
+                timestamp:
+                  d.timestamp
+
+              });
+
+            }
+
+            //
+            // GENERIC TELEMETRY EVENT
+            //
+            events.push({
+
+              type: "telemetry",
+
+              message:
+                `Device ${deviceId} updated`,
+
+              timestamp:
+                d.timestamp
+
+            });
+
+            //
+            // SEND EVENTS
+            //
+            events.forEach((event) => {
+
+              console.log(
+                "EVENT SENT:",
+                event
+              );
+
+              socket.emit(
+                "device_event",
+                {
+
+                  tenant,
+
+                  device_id:
+                    deviceId,
+
+                  ...event
+
+                }
+              );
 
             });
 
@@ -518,7 +646,7 @@ app.get(
           d.group_name,
           d.active,
 
-          c.event_time,
+          c.event_time as timestamp,
           c.temperatura,
           c.humedad,
           c.signal_dbm,
